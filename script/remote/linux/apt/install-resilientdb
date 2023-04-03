@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+#   install-solang - install the Solang compiler from its repository
+#
+
+set -e
+
+resilientdb_url='https://github.com/resilientdb/resilientdb.git'
+resilientdb_checkout='nexres-v1.4.1'
+
+# Create an install dir if not already there.
+#
+if [ ! -e 'install' ] ; then
+    mkdir 'install'
+fi
+
+if [ -e 'install/resilientdb' ] ; then
+  echo "install resilientdb has been installed"
+  exit 0
+fi
+
+sudo -n apt-get -o DPkg::Lock::Timeout=1200 install -yy 'gcc' 'g++' 'git' 
+
+git clone "${resilientdb_url}" 'install/resilientdb'
+(
+    cd 'install/resilientdb'
+
+    git checkout "${resilientdb_checkout}"
+
+    ./INSTALL.sh
+
+    bazel build  kv_server/kv_server
+)

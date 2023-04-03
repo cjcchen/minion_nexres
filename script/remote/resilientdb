@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+
+install_root="${HOME}/install/resilientdb"
+deploy_root="${HOME}/deploy/resilientdb"
+cert_root="${HOME}/deploy/resilientdb/cert"
+bin_path=${install_root}/bazel-bin/kv_server/kv_server
+
+test -e "${install_root}"
+
+export PRIVATE_CONFIG=ignore
+export RUST_LOG=warn
+
+
+ulimit -n 65535
+
+
+case "$1" in
+    'start')
+	#killall -KILL killall -9 kv_server 2> '/dev/null' || true
+    #nohup ${bin_path} ${deploy_root}/server.config ${cert_root}/node.key.pri ${cert_root}/cert_0.cert > ${deploy_root}/server.log 2>&1 &
+	sleep 2
+	;;
+    'kill')
+	#killall -KILL killall -9 kv_server 2> '/dev/null' || true
+	sleep 2
+	;;
+    'stop')
+	#killall -KILL killall -9 kv_server 2> '/dev/null' || true
+	sleep 2
+	;;
+    *)
+	exit 1
+	;;
+esac

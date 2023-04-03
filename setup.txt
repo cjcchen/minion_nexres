@@ -1,1 +1,1 @@
-vagrant@127.0.0.1 = primary,secondary,chain
+ubuntu@172.31.29.213 = primary,secondary,chain

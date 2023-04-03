@@ -46,6 +46,10 @@ if ($RUNNER->run($FLEET, [ 'deploy-avalanche' ])->wait() != 0) {
     die ("failed to deploy avalanche");
 }
 
+if ($RUNNER->run($FLEET, [ 'deploy-resilientdb' ])->wait() != 0) {
+    die ("failed to deploy resilientdb");
+}
+
 # Deploy diablo at the very end as it might need some configuration generated
 # by the deployment of other blockchains.
 #

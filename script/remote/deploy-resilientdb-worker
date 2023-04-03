@@ -1,0 +1,114 @@
+#!/bin/bash
+
+set -e
+
+script_name='deploy-resilientdb-worker'
+install_root="${HOME}/install/resilientdb"
+DEPLOY_ROOT="${HOME}/deploy/resilientdb"
+config_path="${HOME}/deploy/resilientdb"
+CERT_ROOT=${config_path}/cert
+
+
+# Utility functions - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fatal() {
+    local msg="$1" ; shift
+
+    exec >&2
+
+    echo "${script_name}: ${msg}"
+    exit 1
+}
+
+setup_environment() {
+    if [ ! -e "${install_root}" ] ; then
+      fatal "cannot find avalanche install at '${install_root}'"
+    fi
+
+    export PATH="${install_root}/avalanche-tools:${PATH}"
+
+    if ! command -v 'avalanche' > '/dev/null' 2> '/dev/null' ; then
+      fatal "cannot find avalanche executable in '${install_root}'"
+    fi
+}
+
+
+# Prepare action  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+prepare() {
+  if [ $# -gt 0 ] ; then
+    fatal "unexpected operand '$1'"
+  fi
+
+  if [ -e "${DEPLOY_ROOT}" ] ; then
+        sudo rm -rf "${DEPLOY_ROOT}"
+  fi
+
+  if [ ! -d "${DEPLOY_ROOT}" ] ; then
+      mkdir -p "${DEPLOY_ROOT}"
+      mkdir -p "${CERT_ROOT}"
+  fi
+
+  cp ${install_root}/cert/admin.key* ${CERT_ROOT}
+
+  cd ${install_root}
+}
+
+
+# Generate action - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+build_tools() {
+  cd ${install_root}
+  bazel build //tools:key_generator_tools
+  bazel build //tools:certificate_tools
+  bazel build //tools:generate_region_config
+}
+
+generate_key() {
+  local ip=$1
+  local port=$2
+  local type=$3
+
+  cd ${install_root}
+  
+  ADMIN_PRIVATE_KEY="${CERT_ROOT}/admin.key.pri"
+  ADMIN_PUBLIC_KEY="${CERT_ROOT}/admin.key.pub"
+
+  PUBLIC_KEY=${CERT_ROOT}/node.key.pub 
+
+  CERT_TOOLS_BIN=bazel-bin/tools/certificate_tools
+
+  bazel-bin/tools/key_generator_tools "${CERT_ROOT}/node" "AES"
+
+  $CERT_TOOLS_BIN ${CERT_ROOT} ${ADMIN_PRIVATE_KEY} ${ADMIN_PUBLIC_KEY} ${PUBLIC_KEY} 0 ${ip} ${port} ${type}
+}
+
+generate() {
+    local ip="$1" ; shift
+    local port="$1" ; shift
+    local type="$1" ;
+
+    build_tools $ip $port $type
+    generate_key $ip $port $type
+}
+
+
+# Main script - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+if [ $# -lt 1 ] ; then
+    fatal "missing action operand"
+fi
+
+action="$1" ; shift
+
+case "${action}" in
+    'prepare')
+	prepare "$@"
+	;;
+    'generate')
+	generate "$@"
+	;;
+    *)
+	fatal "unknown action: '${action}'"
+	;;
+esac
