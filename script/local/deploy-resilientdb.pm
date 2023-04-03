@@ -26,10 +26,11 @@ my $PROXY_CONFIG_PATH = $MINION_PRIVATE . '/' . $PROXY_CONFIG_NAME;
 sub get_nodes 
 {
   my ($path) = @_;
-  my (%nodes, $node, $fh, $line, $ip, $base_port, $number, $last_ip, $type, $worker, $assigned);
+  my (%nodes, $node, $fh, $line, $ip, $base_port, $nid, $number, $last_ip, $type, $worker, $assigned);
 
   $type="replica";
   $base_port=30001;
+  $nid=1;
 
   if (!open($fh, '<', $path)) {
     die ("cannot open '$path' : $!");
@@ -66,9 +67,11 @@ sub get_nodes
       'worker' => $assigned,
       'number' => $number,
       'port' => $base_port,
-      'type' => $type
+      'type' => $type,
+      'id' => $nid
     };
-    $base_port=$base_port+1
+    $base_port=$base_port+1;
+    $nid=$nid+1;
   }
 
   close($fh);
@@ -83,6 +86,8 @@ sub generate_setup
     my ($ifh, $ofh, $line, $ip, $worker, %groups, $tags, $client_ip, $client_port);
 
   
+    printf("generate setup $target");
+
     foreach $ip (keys(%$nodes)) {
           $line = sprintf("%s:%d", $ip, $nodes->{$ip}->{'port'});
           $tags = $nodes->{$ip}->{'worker'}->region();
@@ -130,21 +135,15 @@ sub build_config
       return 0;
     }
 
-    if (!open($cfh, '>', $client_config)) {
-      return 0;
-    }
-
-    $id=1;
-
     printf($ofh "{\n");
     printf($ofh "\tregion: {\n");
 
     foreach $ip (keys(%$nodes)) {
         $type = $nodes->{$ip}->{'type'};
         $port = $nodes->{$ip}->{'port'};
+        $id = $nodes->{$ip}->{'id'};
         printf("gen config ip $ip, type $type\n");
         if($type eq "client"){
-          printf($cfh "$id $ip $port\n");
           next;
         }
 
@@ -161,7 +160,6 @@ sub build_config
     printf($ofh "}\n");
 
     close($ofh);
-    close($cfh);
 
     printf("Write file %s, %s done\n",$server_config, $client_config);
     return 1;
@@ -181,29 +179,32 @@ sub dispatch_config
         die ("failed to prepare config, only support 1 ip 1 server.");
       }
 
-      $proc = $worker->send([ $server_config, $client_config ], TARGET => $DEPLOY_ROOT);
+      $proc = $worker->send([ $server_config ], TARGET => $DEPLOY_ROOT);
       if ($proc->wait() != 0) {
         die ("failed to prepare avalanche workers");
       }
     }
+    return 1;
 }
 
 sub generate_keys
 {
     my ($server_config, $client_config, $nodes) = @_;
-    my ($ip, $worker, $number, $type, $port, $proc, @procs, @stats);
+    my ($ip, $worker, $number, $type, $port, $id, $proc, @procs, @stats);
 
     foreach $ip (keys(%$nodes)) {
       $worker = $nodes->{$ip}->{'worker'};
       $number = $nodes->{$ip}->{'number'};
       $type = $nodes->{$ip}->{'type'};
       $port = $nodes->{$ip}->{'port'};
+      $id = $nodes->{$ip}->{'id'};
 
-      $proc = $RUNNER->run($worker, [ 'deploy-resilientdb-worker','generate', $ip, $port, $type ]);
+      $proc = $RUNNER->run($worker, [ 'deploy-resilientdb-worker','generate', $ip, $port, $type, $id ]);
       if ($proc->wait() != 0) {
         die ("failed to generate keys");
       }
     }
+    return 1;
 }
 
 sub deploy_resilientdb

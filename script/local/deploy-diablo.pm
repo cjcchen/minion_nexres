@@ -43,6 +43,7 @@ my $QUORUMIBFT_PATH = $SHARED . '/quorum-ibft';
 my $QUORUMRAFT_CHAIN_PATH = $SHARED . '/quorum-raft/chain.yaml';
 my $SOLANA_PATH = $SHARED . '/solana';
 my $AVALANCHE_PATH = $SHARED . '/avalanche';
+my $RESILIENTDB_PATH = $SHARED . '/resilientdb';
 
 
 # Extract from the given $path the Quorum nodes.
@@ -302,6 +303,18 @@ sub deploy_diablo_avalanche
     return deploy_diablo_primary($primary, $AVALANCHE_PATH);
 }
 
+sub deploy_diablo_resilientdb
+{
+    my ($nodes) = @_;
+    my ($primary);
+
+    ($primary) = map { $nodes->{$_}->{'worker'} }
+                 grep { $nodes->{$_}->{'primary'} > 0 }
+                 keys(%$nodes);
+
+    return deploy_diablo_primary($primary, $RESILIENTDB_PATH);
+}
+
 
 sub specialize_workload
 {
@@ -425,6 +438,9 @@ sub deploy_diablo
 	return deploy_diablo_avalanche($nodes);
     }
 
+	if (-f ($RESILIENTDB_PATH . '/setup.yaml')) {
+	return deploy_diablo_resilientdb($nodes);
+    }
 
     return 1;
 }

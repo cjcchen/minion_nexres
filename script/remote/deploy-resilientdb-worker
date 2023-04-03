@@ -6,7 +6,7 @@ script_name='deploy-resilientdb-worker'
 install_root="${HOME}/install/resilientdb"
 DEPLOY_ROOT="${HOME}/deploy/resilientdb"
 config_path="${HOME}/deploy/resilientdb"
-CERT_ROOT=${config_path}/cert
+cert_root=${config_path}/cert
 
 
 # Utility functions - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -46,10 +46,11 @@ prepare() {
 
   if [ ! -d "${DEPLOY_ROOT}" ] ; then
       mkdir -p "${DEPLOY_ROOT}"
-      mkdir -p "${CERT_ROOT}"
+      mkdir -p "${cert_root}"
+      mkdir -p "${DEPLOY_ROOT}/output"
   fi
 
-  cp ${install_root}/cert/admin.key* ${CERT_ROOT}
+  cp ${install_root}/cert/admin.key* ${cert_root}
 
   cd ${install_root}
 }
@@ -68,28 +69,31 @@ generate_key() {
   local ip=$1
   local port=$2
   local type=$3
+  local nid=$4
 
   cd ${install_root}
   
-  ADMIN_PRIVATE_KEY="${CERT_ROOT}/admin.key.pri"
-  ADMIN_PUBLIC_KEY="${CERT_ROOT}/admin.key.pub"
+  admin_private_key="${cert_root}/admin.key.pri"
+  admin_public_key="${cert_root}/admin.key.pub"
 
-  PUBLIC_KEY=${CERT_ROOT}/node.key.pub 
+  public_key=${cert_root}/node.key.pub 
 
-  CERT_TOOLS_BIN=bazel-bin/tools/certificate_tools
+  cert_tools_bin=bazel-bin/tools/certificate_tools
 
-  bazel-bin/tools/key_generator_tools "${CERT_ROOT}/node" "AES"
+  bazel-bin/tools/key_generator_tools "${cert_root}/node" "AES"
 
-  $CERT_TOOLS_BIN ${CERT_ROOT} ${ADMIN_PRIVATE_KEY} ${ADMIN_PUBLIC_KEY} ${PUBLIC_KEY} 0 ${ip} ${port} ${type}
+  $cert_tools_bin ${cert_root} ${admin_private_key} ${admin_public_key} ${public_key} $nid ${ip} ${port} ${type}
+
+  mv ${cert_root}/cert_${nid}.cert ${cert_root}/cert.cert
 }
 
 generate() {
     local ip="$1" ; shift
     local port="$1" ; shift
-    local type="$1" ;
+    local type="$1" ; shift
+    local nid="$1" ;
 
-    build_tools $ip $port $type
-    generate_key $ip $port $type
+    generate_key $ip $port $type $nid
 }
 
 

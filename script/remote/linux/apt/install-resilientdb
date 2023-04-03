@@ -30,4 +30,7 @@ git clone "${resilientdb_url}" 'install/resilientdb'
     ./INSTALL.sh
 
     bazel build  kv_server/kv_server
+    bazel build //tools:key_generator_tools
+    bazel build //tools:certificate_tools
+    bazel build //tools:generate_region_config
 )

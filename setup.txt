@@ -1,1 +1,6 @@
-ubuntu@172.31.29.213 = primary,secondary,chain
+ubuntu@172.31.29.213 = primary,secondary
+ubuntu@172.31.23.180 = chain
+ubuntu@172.31.30.34 = chain
+ubuntu@172.31.28.156 = chain
+ubuntu@172.31.17.187 = chain
+ubuntu@172.31.23.42 = chain
