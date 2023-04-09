@@ -1,3 +1,12 @@
+This repo is forked from lebdron/minion:develop.
+In this repo, we plugined ResilientDB as a DApps.
+
+Getting the throughput on the DApps including ResislientDB
+===================
+Only support native transfer messages. workload-50000.yaml provides the workload and setup.txt provides the node address.
+
+   bin/eurosys workload-50000.yaml setup.txt
+
 Minion version 0.01
 ===================
 
