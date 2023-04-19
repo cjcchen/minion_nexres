@@ -55,7 +55,7 @@ sub benchmark
     }
 
 #foreach $blockchain (qw(algorand diem avalanche solana quorum-ibft poa)) {
-  foreach $blockchain (qw(resilientdb)) {
+  foreach $blockchain (qw(resilientdb-poc)) {
   #foreach $blockchain (qw(algorand)) {
     if ($blockchain =~ /algorand/) {
       $accounts = scalar(@$chain);

@@ -7,6 +7,10 @@ Only support native transfer messages. workload-50000.yaml provides the workload
 
    bin/eurosys workload-50000.yaml setup.txt
 
+For the second time if everything has been installed:
+
+   bin/eurosys --skip-install workload-50000.yaml setup.txt
+
 Minion version 0.01
 ===================
 
@@ -22,6 +26,12 @@ good idea to provide version information here so that people can
 decide whether fixes for the module are worth downloading.
 
 INSTALLATION
+
+sudo apt install python3-pip
+export PATH="~/.pyenv/bin:$PATH"
+
+https://diablobench.github.io/fresh-install
+
 
 To install this module type the following:
 

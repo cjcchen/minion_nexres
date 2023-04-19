@@ -50,6 +50,10 @@ if ($RUNNER->run($FLEET, [ 'deploy-resilientdb' ])->wait() != 0) {
     die ("failed to deploy resilientdb");
 }
 
+if ($RUNNER->run($FLEET, [ 'deploy-resilientdb-poc' ])->wait() != 0) {
+    die ("failed to deploy resilientdb-poc");
+}
+
 # Deploy diablo at the very end as it might need some configuration generated
 # by the deployment of other blockchains.
 #

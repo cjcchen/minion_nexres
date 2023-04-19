@@ -44,6 +44,7 @@ my $QUORUMRAFT_CHAIN_PATH = $SHARED . '/quorum-raft/chain.yaml';
 my $SOLANA_PATH = $SHARED . '/solana';
 my $AVALANCHE_PATH = $SHARED . '/avalanche';
 my $RESILIENTDB_PATH = $SHARED . '/resilientdb';
+my $RESILIENTDB_POC_PATH = $SHARED . '/resilientdb_poc';
 
 
 # Extract from the given $path the Quorum nodes.

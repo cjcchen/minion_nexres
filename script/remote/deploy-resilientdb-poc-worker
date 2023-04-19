@@ -1,0 +1,118 @@
+#!/bin/bash
+
+set -e
+
+script_name='deploy-resilientdb-worker-poc'
+install_root="${HOME}/install/resilientdb"
+DEPLOY_ROOT="${HOME}/deploy/resilientdb_poc"
+config_path="${HOME}/deploy/resilientdb_poc"
+cert_root=${config_path}/cert
+
+
+# Utility functions - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fatal() {
+    local msg="$1" ; shift
+
+    exec >&2
+
+    echo "${script_name}: ${msg}"
+    exit 1
+}
+
+setup_environment() {
+    if [ ! -e "${install_root}" ] ; then
+      fatal "cannot find avalanche install at '${install_root}'"
+    fi
+
+    export PATH="${install_root}/avalanche-tools:${PATH}"
+
+    if ! command -v 'avalanche' > '/dev/null' 2> '/dev/null' ; then
+      fatal "cannot find avalanche executable in '${install_root}'"
+    fi
+}
+
+
+# Prepare action  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+prepare() {
+  if [ $# -gt 0 ] ; then
+    fatal "unexpected operand '$1'"
+  fi
+
+  if [ -e "${DEPLOY_ROOT}" ] ; then
+        sudo rm -rf "${DEPLOY_ROOT}"
+  fi
+
+  if [ ! -d "${DEPLOY_ROOT}" ] ; then
+      mkdir -p "${DEPLOY_ROOT}"
+      mkdir -p "${cert_root}"
+      mkdir -p "${DEPLOY_ROOT}/output"
+  fi
+
+  cp ${install_root}/cert/admin.key* ${cert_root}
+
+  cd ${install_root}
+}
+
+
+# Generate action - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+build_tools() {
+  cd ${install_root}
+  bazel build //tools:key_generator_tools
+  bazel build //tools:certificate_tools
+  bazel build //tools:generate_region_config
+}
+
+generate_key() {
+  local ip=$1
+  local port=$2
+  local type=$3
+  local nid=$4
+
+  cd ${install_root}
+  
+  admin_private_key="${cert_root}/admin.key.pri"
+  admin_public_key="${cert_root}/admin.key.pub"
+
+  public_key=${cert_root}/node.key.pub 
+
+  cert_tools_bin=bazel-bin/tools/certificate_tools
+
+  bazel-bin/tools/key_generator_tools "${cert_root}/node" "AES"
+
+  $cert_tools_bin ${cert_root} ${admin_private_key} ${admin_public_key} ${public_key} $nid ${ip} ${port} ${type}
+
+  mv ${cert_root}/cert_${nid}.cert ${cert_root}/cert.cert
+}
+
+generate() {
+    local ip="$1" ; shift
+    local port="$1" ; shift
+    local type="$1" ; shift
+    local nid="$1" ;
+
+    generate_key $ip $port $type $nid
+}
+
+
+# Main script - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+if [ $# -lt 1 ] ; then
+    fatal "missing action operand"
+fi
+
+action="$1" ; shift
+
+case "${action}" in
+    'prepare')
+	prepare "$@"
+	;;
+    'generate')
+	generate "$@"
+	;;
+    *)
+	fatal "unknown action: '${action}'"
+	;;
+esac

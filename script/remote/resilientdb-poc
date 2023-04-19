@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+install_root="${HOME}/install/resilientdb"
+deploy_root="${HOME}/deploy/resilientdb"
+cert_root="${HOME}/deploy/resilientdb/cert"
+transaction_server=bazel-bin//application/poc/server/transaction_server
+mining_server=bazel-bin//application/poc/server/mining_server
+transaction_config=${deploy_root}/transaction_server.config
+mining_config=${deploy_root}/mining_server.config
+
+test -e "${install_root}"
+
+export PRIVATE_CONFIG=ignore
+export RUST_LOG=warn
+
+
+ulimit -n 65535
+
+case "$1" in
+    'start')
+	killall -KILL killall -9 transaction_server mining_server 2> '/dev/null' || true
+	if [ -f "${mining_config}" ]; then
+	    nohup ${mining_server} ${transaction_config} ${mining_config} ${cert_root}/node.key.pri ${cert_root}/cert.cert > ${deploy_root}/output/out 2>&1 &
+	else
+	    nohup ${transaction_server} ${transaction_config} ${cert_root}/node.key.pri ${cert_root}/cert.cert > ${deploy_root}/output/out 2>&1 &
+	fi
+	sleep 10
+	;;
+    'kill')
+	killall -KILL killall -9 transaction_server mining_server 2> '/dev/null' || true
+	sleep 2
+	;;
+    'stop')
+	killall -KILL killall -9 transaction_server mining_server 2> '/dev/null' || true
+	sleep 2
+	;;
+    *)
+	exit 1
+	;;
+esac
