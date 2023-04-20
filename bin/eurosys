@@ -29,7 +29,7 @@ my $RUN_RESULT = sub {
 
 sub benchmark
 {
-    my ($workload, $workers) = @_;
+    my ($workload, $workers, $chain_name) = @_;
     my ($pair, $worker, $roles, $blockchain, %results, $result, $output);
     my ($primary, $secondaries, $chain);
     my ($nworkload, $id, $contract, $accounts);
@@ -54,9 +54,9 @@ sub benchmark
 	}
     }
 
-#foreach $blockchain (qw(algorand diem avalanche solana quorum-ibft poa)) {
-  foreach $blockchain (qw(resilientdb-poc)) {
-  #foreach $blockchain (qw(algorand)) {
+  $blockchain = $chain_name;
+  {
+  #foreach $blockchain (qw($chain_name)) {
     if ($blockchain =~ /algorand/) {
       $accounts = scalar(@$chain);
     } elsif ($blockchain =~ /diem/) {
@@ -292,6 +292,7 @@ sub benchmark_blockchain
     chdir($dir);
     }
 
+    system('cat', $full . '/diablo-primary-' . $primary->id() .  '-out.log');
     system('tar', '--create', '--auto-compress', '--file',
     $base . $compress, $base);
     system('rm', '-rf', $base);
@@ -306,11 +307,10 @@ sub benchmark_blockchain
 
 sub install
 {
-    my ($workers, $install_name) = @_;
+    my ($workers) = @_;
     my ($runner, $pair, $worker, $all, $proc, $grp);
 
     $all = [];
-    printf("installname: $install_name\n");
 
     foreach $pair (@$workers) {
 	($worker, $_) = @$pair;
@@ -322,49 +322,49 @@ sub install
 	REMOTE => [ 'script/remote/' ]
 	);
 
-#   if ($runner->run($all, [ 'prepare-install' ])->wait() != 0) {
-#	fatal("failed to prepare install");
-#    }
+   if ($runner->run($all, [ 'prepare-install' ])->wait() != 0) {
+	fatal("failed to prepare install");
+   }
 
-    #if ($runner->run($all, [ 'install-diablo' ])->wait() != 0) {
-#	fatal("failed to install diablo");
-#    }
+    if ($runner->run($all, [ 'install-diablo' ])->wait() != 0) {
+	fatal("failed to install diablo");
+    }
 
-#    if ($runner->run($all, [ 'install-algorand' ])->wait() != 0) {
-#	fatal("failed to install algorand");
-#    }
-#
-#    if ($runner->run($all, [ 'install-diem' ])->wait() != 0) {
-#	fatal("failed to install diem");
-#    }
-#
-#    if ($runner->run($all, [ 'install-geth-accounts', '--number=10000' ])->wait() != 0) {
-#	fatal("failed to install geth accounts");
-#    }
-#
-#	if ($runner->run($all, [ 'install-avalanche' ])->wait() != 0) {
-#	fatal("failed to install avalanche");
-#    }
-#
-#	if ($runner->run($all, [ 'install-solana' ])->wait() != 0) {
-#	fatal("failed to install solana");
-#    }
-#
-#	if ($runner->run($all, [ 'install-quorum' ])->wait() != 0) {
-#	fatal("failed to install quorum");
-#    }
-#
-#	if ($runner->run($all, [ 'install-poa' ])->wait() != 0) {
-#	fatal("failed to install poa");
-#    }
-#
-#	if ($runner->run($all, [ 'install-solidity' ])->wait() != 0) {
-#	fatal("failed to install solidity");
-#    }
-#
-#	if ($runner->run($all, [ 'install-solang' ])->wait() != 0) {
-#	fatal("failed to install solang");
-#    }
+    if ($runner->run($all, [ 'install-algorand' ])->wait() != 0) {
+	fatal("failed to install algorand");
+   }
+
+    if ($runner->run($all, [ 'install-diem' ])->wait() != 0) {
+	fatal("failed to install diem");
+   }
+
+    if ($runner->run($all, [ 'install-geth-accounts', '--number=10000' ])->wait() != 0) {
+	fatal("failed to install geth accounts");
+    }
+
+	if ($runner->run($all, [ 'install-avalanche' ])->wait() != 0) {
+	fatal("failed to install avalanche");
+    }
+
+	if ($runner->run($all, [ 'install-solana' ])->wait() != 0) {
+	fatal("failed to install solana");
+    }
+
+	if ($runner->run($all, [ 'install-quorum' ])->wait() != 0) {
+	fatal("failed to install quorum");
+    }
+
+	if ($runner->run($all, [ 'install-poa' ])->wait() != 0) {
+	fatal("failed to install poa");
+    }
+
+	if ($runner->run($all, [ 'install-solidity' ])->wait() != 0) {
+	fatal("failed to install solidity");
+    }
+
+	if ($runner->run($all, [ 'install-solang' ])->wait() != 0) {
+	fatal("failed to install solang");
+    }
 
 if ($runner->run($all, [ 'install-resilientdb' ])->wait() != 0) {
   fatal("failed to install resilientdb");
@@ -613,14 +613,28 @@ EOF
 sub main
 {
     my ($workload, $setup, @err);
-    my ($id, $chain, $contract, $secondaries, $workers, $skip_install, $install_name);
+    my ($id, $chain, $contract, $secondaries, $workers, $skip_install, $chain_name);
 
     GetOptionsFromArray(
 	\@_,
 	'h|help' => sub { printf("%s", usage()); exit (0); },
 	'skip-install' => \$skip_install,
-	'install=s' => \$install_name
+	'blockchain=s' => \$chain_name
 	);
+ 
+  printf("run benchmark on %s\n", $chain_name);
+
+  my @block_chain_list=qw(algorand diem avalanche solana quorum-ibft poa resilientdb resilientdb-poc);
+
+  if (grep(/^$chain_name$/, @block_chain_list)){
+    printf("exists\n");
+  } else {
+    printf("only support:\n");
+    foreach (@block_chain_list) {
+      print "$_";
+    }
+    fatal("unexpected chain: %s\n", $chain_name);
+  }
 
     ($workload, $setup, @err) = @_;
 
@@ -636,10 +650,10 @@ sub main
     $workers = create_workers($setup);
 
     if (!$skip_install) {
-      install($workers, $install_name);
+      install($workers);
     }
 
-    benchmark($workload, $workers);
+    benchmark($workload, $workers, $chain_name);
 
     return 0;
 }

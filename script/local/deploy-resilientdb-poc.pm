@@ -76,18 +76,15 @@ sub get_nodes
 
   close($fh);
 
-  $nodes{$last_ip}->{'type'} = "client";
-  
-  foreach $ip (keys(%$nodes)) {
-          $id  = $nodes->{$ip}->{'id'};
-
-	  if( $id == ($nid-1)/2+1 ){
+  foreach $ip (keys(%nodes)) {
+    $id  = $nodes{$ip}->{'id'};
+	  if( $id == int(($nid-1)/2)+1 ){
 		  $nodes{$ip}->{'type'} = "client";
 	  } 
 	  if( $id > ($nid-1)/2+1) {
 		  $nodes{$ip}->{'type'} = "poc";
 	  }
-    }
+  }
 
   return \%nodes;
 }
@@ -217,7 +214,7 @@ sub dispatch_config
         die ("failed to prepare config, only support 1 ip 1 server.");
       }
 
-      if($type == "poc") {
+      if($type eq "poc") {
 	      $proc = $worker->send([ $server_config, $mining_config ], TARGET => $DEPLOY_ROOT);
 	      if ($proc->wait() != 0) {
 		die ("failed to prepare avalanche workers");
@@ -244,11 +241,11 @@ sub generate_keys
       $port = $nodes->{$ip}->{'port'};
       $id = $nodes->{$ip}->{'id'};
 
-      if($type == "poc"){
+      if($type eq "poc"){
 	      $type = "replica"
       }
 
-      $proc = $RUNNER->run($worker, [ 'deploy-resilientdb-worker','generate', $ip, $port, $type, $id ]);
+      $proc = $RUNNER->run($worker, [ 'deploy-resilientdb-poc-worker','generate', $ip, $port, $type, $id ]);
       if ($proc->wait() != 0) {
         die ("failed to generate keys");
       }

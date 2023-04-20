@@ -82,6 +82,7 @@ generate_key() {
 
   bazel-bin/tools/key_generator_tools "${cert_root}/node" "AES"
 
+  echo "$cert_tools_bin ${cert_root} ${admin_private_key} ${admin_public_key} ${public_key} $nid ${ip} ${port} ${type}"
   $cert_tools_bin ${cert_root} ${admin_private_key} ${admin_public_key} ${public_key} $nid ${ip} ${port} ${type}
 
   mv ${cert_root}/cert_${nid}.cert ${cert_root}/cert.cert

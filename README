@@ -28,9 +28,10 @@ decide whether fixes for the module are worth downloading.
 INSTALLATION
 
 sudo apt install python3-pip
-export PATH="~/.pyenv/bin:$PATH"
 
 https://diablobench.github.io/fresh-install
+
+cp ssh_key ~/.ssh/id_rsa
 
 
 To install this module type the following:

@@ -316,6 +316,19 @@ sub deploy_diablo_resilientdb
     return deploy_diablo_primary($primary, $RESILIENTDB_PATH);
 }
 
+sub deploy_diablo_resilientdb_poc
+{
+    my ($nodes) = @_;
+    my ($primary);
+
+    ($primary) = map { $nodes->{$_}->{'worker'} }
+                 grep { $nodes->{$_}->{'primary'} > 0 }
+                 keys(%$nodes);
+
+    return deploy_diablo_primary($primary, $RESILIENTDB_POC_PATH);
+}
+
+
 
 sub specialize_workload
 {
@@ -441,6 +454,10 @@ sub deploy_diablo
 
 	if (-f ($RESILIENTDB_PATH . '/setup.yaml')) {
 	return deploy_diablo_resilientdb($nodes);
+    }
+
+	if (-f ($RESILIENTDB_POC_PATH . '/setup.yaml')) {
+	return deploy_diablo_resilientdb_poc($nodes);
     }
 
     return 1;
