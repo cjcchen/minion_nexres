@@ -5,11 +5,11 @@ Getting the throughput on the DApps including ResislientDB
 ===================
 Only support native transfer messages. workload-50000.yaml provides the workload and setup.txt provides the node address.
 
-   bin/eurosys workload-50000.yaml setup.txt
+   bin/eurosys --blockchain=resilientdb workload-50000.yaml setup.txt
 
 For the second time if everything has been installed:
 
-   bin/eurosys --skip-install workload-50000.yaml setup.txt
+   bin/eurosys --skip-install --blockchain=diem workload-50000.yaml setup.txt
 
 Minion version 0.01
 ===================
