@@ -1,0 +1,108 @@
+#!/bin/bash
+
+set -e
+
+
+script_name='deploy-poc-worker'
+poc_install_root="${HOME}/install/resilientdb"
+DEPLOY_ROOT="${HOME}/deploy/"
+config_path="${HOME}/deploy/"
+cert_root=${config_path}/cert
+
+set_env() {
+  poc_install_root="${HOME}/install/resilientdb"
+  DEPLOY_ROOT="${HOME}/deploy/$1"
+  config_path="${HOME}/deploy/$1"
+  cert_root=${config_path}/cert
+}
+
+# Prepare action  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+prepare() {
+  echo "install root:"${install_root}
+  echo "deploy root:"${deploy_root}
+  echo "cert root:"${cert_root}
+
+  if [ $# -gt 0 ] ; then
+    fatal "unexpected operand '$1'"
+  fi
+
+  if [ -e "${DEPLOY_ROOT}" ] ; then
+        sudo rm -rf "${DEPLOY_ROOT}"
+  fi
+
+  if [ ! -d "${DEPLOY_ROOT}" ] ; then
+      mkdir -p "${DEPLOY_ROOT}"
+      mkdir -p "${cert_root}"
+      mkdir -p "${DEPLOY_ROOT}/output"
+  fi
+
+  cp ${poc_install_root}/cert/admin.key* ${cert_root}
+
+  cd ${poc_install_root}
+}
+
+
+# Generate action - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+build_tools() {
+  cd ${poc_install_root}
+  bazel build //tools:key_generator_tools
+  bazel build //tools:certificate_tools
+  bazel build //tools:generate_region_config
+}
+
+generate_key() {
+  local ip=$1
+  local port=$2
+  local type=$3
+  local nid=$4
+
+  cd ${poc_install_root}
+  
+  admin_private_key="${cert_root}/admin.key.pri"
+  admin_public_key="${cert_root}/admin.key.pub"
+
+  public_key=${cert_root}/node.key.pub 
+
+  cert_tools_bin=bazel-bin/tools/certificate_tools
+
+  bazel-bin/tools/key_generator_tools "${cert_root}/node" "AES"
+
+  echo "$cert_tools_bin ${cert_root} ${admin_private_key} ${admin_public_key} ${public_key} $nid ${ip} ${port} ${type}"
+  $cert_tools_bin ${cert_root} ${admin_private_key} ${admin_public_key} ${public_key} $nid ${ip} ${port} ${type}
+
+  mv ${cert_root}/cert_${nid}.cert ${cert_root}/cert.cert
+}
+
+generate() {
+    local ip="$1" ; shift
+    local port="$1" ; shift
+    local type="$1" ; shift
+    local nid="$1" ;
+
+    generate_key $ip $port $type $nid
+}
+
+# Main script - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+if [ $# -lt 1 ] ; then
+    fatal "missing action operand"
+fi
+
+appname="$1" ; shift
+action="$1" ; shift
+echo "======="
+set_env $appname
+
+case "${action}" in
+    'prepare')
+	prepare "$@"
+	;;
+    'generate')
+	generate "$@"
+	;;
+    *)
+	fatal "unknown action: '${action}'"
+	;;
+esac

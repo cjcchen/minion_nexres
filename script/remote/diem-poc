@@ -1,0 +1,85 @@
+#!/bin/bash
+
+set -e
+
+install_root="${HOME}/install/diem"
+deploy_root="${HOME}/deploy/diem_poc"
+poc_install_root="${HOME}/install/resilientdb/"
+poc_server_install_root="${HOME}/install/resilientdb/go_client/server"
+
+cert_root="${deploy_root}/cert"
+transaction_config=${deploy_root}/transaction_server.config
+mining_config=${deploy_root}/mining_server.config
+mining_server=${poc_install_root}/bazel-bin//application/poc/server/mining_server
+
+test -e "${install_root}"
+
+export PATH="${install_root}/target/release:${PATH}"
+export PRIVATE_CONFIG=ignore
+export RUST_LOG=warn
+
+command -v 'diem-node' > '/dev/null'
+
+
+ulimit -n 65535
+
+
+case "$1" in
+    'start')
+	killall -KILL diem-node 2> '/dev/null' || true
+	killall -KILL mining_server 2> '/dev/null' || true
+  ps -ef | grep "go run server.go" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  ps -ef | grep "go-build" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  sleep 1
+	if [ -f "${mining_config}" ]; then
+      echo "===================== start mining"
+	    nohup ${mining_server} ${transaction_config} ${mining_config} ${cert_root}/node.key.pri ${cert_root}/cert.cert 1000 42 28 > ${deploy_root}/output/out 2>&1 &
+  fi
+  for dir in "${deploy_root}/"* ; do
+	    test -f "${dir}/node.yaml" || continue
+	    diem-node --config "${dir}/node.yaml" \
+		      > "${dir}/out" 2> "${dir}/err" &
+	    pid=$!
+	    echo ${pid} > "${dir}/pid"
+	done
+  #sleep 2
+  if [ -f "${mining_config}" ]; then
+    echo "mining server skip"
+  else
+    c=${PWD}
+    cd ${HOME}
+    export PATH="${PWD}/install/go1.17.9/bin:${PATH}"
+    cd ${poc_server_install_root}
+    nohup go run server.go > ${deploy_root}/server_out 2>&1 &
+    cd ${c}
+  fi
+  sleep 2
+		;;
+    'kill')
+	killall -KILL mining_server 2> '/dev/null' || true
+	for dir in "${deploy_root}/"* ; do
+		test -f "${dir}/pid" || continue
+	    pid="$(cat "${dir}/pid")" || continue
+	    kill -KILL ${pid} 2> '/dev/null' || continue
+	    rm "${dir}/pid"
+	done
+  ps -ef | grep "go run server.go" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  ps -ef | grep "go-build" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  sleep 5
+	;;
+    'stop')
+	for dir in "${deploy_root}/"* ; do
+		test -f "${dir}/pid" || continue
+	    pid="$(cat "${dir}/pid")" || continue
+	    kill -INT ${pid} 2> '/dev/null' || continue
+	done
+	killall -KILL mining_server 2> '/dev/null' || true
+  ps -ef | grep "go run server.go" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  ps -ef | grep "go-build" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+	sleep 5
+	exec "$0" kill
+	;;
+    *)
+	exit 1
+	;;
+esac

@@ -26,6 +26,10 @@ if ($RUNNER->run($FLEET, [ 'deploy-diem' ])->wait() != 0) {
     die ("failed to deploy diem");
 }
 
+if ($RUNNER->run($FLEET, [ 'deploy-diem-poc' ])->wait() != 0) {
+    die ("failed to deploy diem poc");
+}
+
 if ($RUNNER->run($FLEET, [ 'deploy-poa' ])->wait() != 0) {
     die ("failed to deploy poa");
 }

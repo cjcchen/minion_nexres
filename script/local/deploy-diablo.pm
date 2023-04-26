@@ -38,6 +38,7 @@ my $KEYS_LOC = $DEPLOY . '/keys.json';
 
 my $ALGORAND_PATH = $SHARED . '/algorand';
 my $DIEM_PATH = $SHARED . '/diem';
+my $DIEM_POC_PATH = $SHARED . '/diem_poc';
 my $POA_PATH = $SHARED . '/poa';
 my $QUORUMIBFT_PATH = $SHARED . '/quorum-ibft';
 my $QUORUMRAFT_CHAIN_PATH = $SHARED . '/quorum-raft/chain.yaml';
@@ -251,6 +252,19 @@ sub deploy_diablo_diem
     return deploy_diablo_primary($primary, $DIEM_PATH);
 }
 
+sub deploy_diablo_diem_poc
+{
+    my ($nodes) = @_;
+    my ($primary);
+
+    ($primary) = map { $nodes->{$_}->{'worker'} }
+                 grep { $nodes->{$_}->{'primary'} > 0 }
+                 keys(%$nodes);
+
+    return deploy_diablo_primary($primary, $DIEM_POC_PATH);
+}
+
+
 sub deploy_diablo_poa
 {
     my ($nodes) = @_;
@@ -434,6 +448,10 @@ sub deploy_diablo
 
     if (-f ($DIEM_PATH . '/setup.yaml')) {
 	return deploy_diablo_diem($nodes);
+    }
+
+    if (-f ($DIEM_POC_PATH . '/setup.yaml')) {
+	return deploy_diablo_diem_poc($nodes);
     }
 
     if (-f ($POA_PATH . '/setup.yaml')) {
