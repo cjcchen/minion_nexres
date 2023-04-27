@@ -37,6 +37,7 @@ my $KEYS_LOC = $DEPLOY . '/keys.json';
 
 
 my $ALGORAND_PATH = $SHARED . '/algorand';
+my $ALGORAND_POC_PATH = $SHARED . '/algorand_poc';
 my $DIEM_PATH = $SHARED . '/diem';
 my $DIEM_POC_PATH = $SHARED . '/diem_poc';
 my $POA_PATH = $SHARED . '/poa';
@@ -239,6 +240,19 @@ sub deploy_diablo_algorand
 
     return deploy_diablo_primary($primary, $ALGORAND_PATH);
 }
+
+sub deploy_diablo_algorand_poc
+{
+    my ($nodes) = @_;
+    my ($primary);
+
+    ($primary) = map { $nodes->{$_}->{'worker'} }
+                 grep { $nodes->{$_}->{'primary'} > 0 }
+                 keys(%$nodes);
+
+    return deploy_diablo_primary($primary, $ALGORAND_POC_PATH);
+}
+
 
 sub deploy_diablo_diem
 {
@@ -446,6 +460,10 @@ sub deploy_diablo
 	return deploy_diablo_algorand($nodes);
     }
 
+    if (-f ($ALGORAND_POC_PATH . '/setup.yaml')) {
+	return deploy_diablo_algorand_poc($nodes);
+    }
+
     if (-f ($DIEM_PATH . '/setup.yaml')) {
 	return deploy_diablo_diem($nodes);
     }
@@ -464,10 +482,6 @@ sub deploy_diablo
 
 	if (-f ($SOLANA_PATH . '/setup.yaml')) {
 	return deploy_diablo_solana($nodes);
-    }
-
-	if (-f ($AVALANCHE_PATH . '/setup.yaml')) {
-	return deploy_diablo_avalanche($nodes);
     }
 
 	if (-f ($RESILIENTDB_PATH . '/setup.yaml')) {

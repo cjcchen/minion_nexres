@@ -1,0 +1,158 @@
+#!/bin/bash
+#
+#   algorand - run algorand on a worker node
+#
+#   Assume algorand is installed on the current environment under the path
+#   "$HOME/install/algorand" and deployed under the path
+#   "$HOME/deploy/algorand".
+#
+#   Depending on the worker role defined during deployment, start or stop an
+#   algorand full or client node or both.
+#
+
+set -e
+
+script_name='algorand-poc'
+install_root="${HOME}/install/algorand"
+deploy_root="${HOME}/deploy/algorand"
+
+node_root="${deploy_root}/n"
+client_root="${deploy_root}/c"
+
+poc_install_root="${HOME}/install/resilientdb/"
+poc_server_install_root="${poc_install_root}/go_client/server"
+poc_deploy_root="${HOME}/deploy/poc"
+cert_root="${poc_deploy_root}/cert"
+transaction_config=${poc_deploy_root}/transaction_server.config
+mining_config=${poc_deploy_root}/mining_server.config
+mining_server=${poc_install_root}/bazel-bin//application/poc/server/mining_server
+
+# Utility functions - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fatal() {
+    local msg="$1" ; shift
+
+    exec >&2
+
+    echo "${script_name}: ${msg}"
+    echo
+    echo "Usage: $0 start (1)"
+    echo "       $0 stop (2)"
+    echo
+    echo "Either start (1) or stop (2) the full and client nodes deployed on"
+    echo "this worker"
+
+    exit 1
+}
+
+setup_environment() {
+    if [ ! -e "${install_root}" ] ; then
+	fatal "cannot find algorand install at '${install_root}'"
+    fi
+
+    export PATH="${install_root}/go/bin:${PATH}"
+
+    if ! command -v 'goal' > '/dev/null' 2> '/dev/null' ; then
+	fatal "cannot find goal executable in '${install_root}'"
+    fi
+}
+
+
+# Actions - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+start() {
+    local dir
+    echo "==================   start ================="
+    if [ $# -gt 0 ] ; then
+	fatal "unexpected operand '$1'"
+    fi
+
+    for dir in "${node_root}"* ; do
+	if [ -e "${dir}" ] ; then
+	    "${dir}/start" > "${dir}/out" 2> "${dir}/err"
+	fi
+    done
+
+    for dir in "${client_root}"* ; do
+	if [ -e "${dir}" ] ; then
+	    "${dir}/start" > "${dir}/out" 2> "${dir}/err"
+	fi
+    done
+
+  killall -KILL mining_server 2> '/dev/null' || true
+  ps -ef | grep "go run server.go" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  ps -ef | grep "go-build" | awk '{ print "kill "$2 }' | sh 2>&1 || true
+  sleep 1
+
+  c=${PWD}
+  cd ${HOME}
+  export PATH="${PWD}/install/go1.17.9/bin:${PATH}"
+  cd ${poc_server_install_root}
+  nohup go run server.go > ${deploy_root}/server_out 2>&1 &
+  cd ${c}
+  
+  sleep 2
+
+  nohup ${mining_server} ${transaction_config} ${mining_config} ${cert_root}/node.key.pri ${cert_root}/cert.cert 1 42 28 > ${poc_deploy_root}/output/out 2>&1 &
+
+}
+
+stop() {
+    local dir
+
+    echo "==================   stop ================="
+    if [ $# -gt 0 ] ; then
+	fatal "unexpected operand '$1'"
+    fi
+
+    for dir in "${node_root}"* ; do
+	if [ -e "${dir}" ] ; then
+	    goal node stop --datadir "${dir}" > '/dev/null' || true
+	fi
+    done
+
+    for dir in "${client_root}"* ; do
+	if [ -e "${dir}" ] ; then
+	    goal node stop --datadir "${dir}" > '/dev/null' || true
+	fi
+    done
+
+    killall 'algod' 2> '/dev/null' || true
+
+    rm -rf "${HOME}/.algorand"
+  killall -KILL mining_server 2> '/dev/null' || true
+}
+
+die() {
+    if [ $# -gt 0 ] ; then
+	fatal "unexpected operand '$1'"
+    fi
+
+    killall -KILL 'algod' 2> '/dev/null' || true
+}
+
+
+# Main script - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+setup_environment
+
+if [ $# -lt 1 ] ; then
+    fatal "missing action operand"
+fi
+
+action="$1" ; shift
+
+case "${action}" in
+    'kill')
+	die "$@"
+	;;
+    'start')
+	start "$@"
+	;;
+    'stop')
+	stop "$@"
+	;;
+    *)
+	fatal "unknown action: '${action}'"
+	;;
+esac

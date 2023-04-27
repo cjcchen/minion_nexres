@@ -18,8 +18,12 @@ $FLEET->execute(['rm', '-rf', 'deploy'], STDERRS => '/dev/null')->waitall();
 # Do nothing if not enabled.
 #
 
-if ($RUNNER->run($FLEET, [ 'deploy-algorand' ])->wait() != 0) {
-    die ("failed to deploy algorand");
+#if ($RUNNER->run($FLEET, [ 'deploy-algorand' ])->wait() != 0) {
+#    die ("failed to deploy algorand");
+#}
+
+if ($RUNNER->run($FLEET, [ 'deploy-algorand-poc' ])->wait() != 0) {
+    die ("failed to deploy algorand-poc");
 }
 
 if ($RUNNER->run($FLEET, [ 'deploy-diem' ])->wait() != 0) {
@@ -30,10 +34,12 @@ if ($RUNNER->run($FLEET, [ 'deploy-diem-poc' ])->wait() != 0) {
     die ("failed to deploy diem poc");
 }
 
+print("deploy 4");
 if ($RUNNER->run($FLEET, [ 'deploy-poa' ])->wait() != 0) {
     die ("failed to deploy poa");
 }
 
+print("deploy 5");
 if ($RUNNER->run($FLEET, [ 'deploy-quorum-ibft' ])->wait() != 0) {
     die ("failed to deploy quorum-ibft");
 }

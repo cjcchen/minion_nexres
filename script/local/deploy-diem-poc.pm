@@ -314,6 +314,10 @@ sub deploy_poc
 {
     my ($simd, $fh, $line, $nodes, $ip, %workers, $worker, $assigned, @workers, $proc, $type);
 
+    if (!(-e $ROLE_PATH)) {
+      return 1;
+    }
+
     $nodes = get_nodes($ROLE_PATH);
 
     if (!build_config($TRANSACTION_CONFIG_PATH, $MINING_CONFIG_PATH, $nodes)) {

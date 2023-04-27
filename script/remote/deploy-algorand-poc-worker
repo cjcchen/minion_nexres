@@ -12,7 +12,7 @@
 
 set -e
 
-script_name='deploy-algorand-worker'
+script_name='deploy-algorand-poc-worker'
 install_root="${HOME}/install/algorand"
 deploy_root="${HOME}/deploy/algorand"
 prepare_root="${HOME}/prepare/algorand"
@@ -55,23 +55,19 @@ setup_environment() {
 # Prepare action  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 prepare() {
-    echo "prepare========================"
     if [ $# -gt 0 ] ; then
 	fatal "unexpected operand '$1'"
     fi
 
-    echo "rm ========================"
     if [ -e "${deploy_root}" ] ; then
 	rm -rf "${deploy_root}"
     fi
 
-    echo "mk ========================"
 	mkdir -p "${deploy_root}"
 
     if [ ! -d "${prepare_root}" ] ; then
 	mkdir -p "${prepare_root}"
     fi
-    echo "done ========================"
 }
 
 
