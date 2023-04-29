@@ -628,7 +628,7 @@ sub main
  
   printf("run benchmark on %s\n", $chain_name);
 
-  my @block_chain_list=qw(algorand diem avalanche solana quorum-ibft poa resilientdb resilientdb-poc diem-poc algorand-poc);
+  my @block_chain_list=qw(algorand diem avalanche solana quorum-ibft poa resilientdb resilientdb-poc diem-poc algorand-poc quorum-ibft-poc poa-poc);
 
   if (grep(/^$chain_name$/, @block_chain_list)){
     printf("exists\n");
