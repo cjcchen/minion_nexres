@@ -41,7 +41,9 @@ my $ALGORAND_POC_PATH = $SHARED . '/algorand_poc';
 my $DIEM_PATH = $SHARED . '/diem';
 my $DIEM_POC_PATH = $SHARED . '/diem_poc';
 my $POA_PATH = $SHARED . '/poa';
+my $POA_POC_PATH = $SHARED . '/poa_poc';
 my $QUORUMIBFT_PATH = $SHARED . '/quorum-ibft';
+my $QUORUMIBFT_POC_PATH = $SHARED . '/quorum-ibft-poc';
 my $QUORUMRAFT_CHAIN_PATH = $SHARED . '/quorum-raft/chain.yaml';
 my $SOLANA_PATH = $SHARED . '/solana';
 my $AVALANCHE_PATH = $SHARED . '/avalanche';
@@ -291,6 +293,19 @@ sub deploy_diablo_poa
     return deploy_diablo_primary($primary, $POA_PATH);
 }
 
+sub deploy_diablo_poa_poc
+{
+    my ($nodes) = @_;
+    my ($primary);
+
+    ($primary) = map { $nodes->{$_}->{'worker'} }
+                 grep { $nodes->{$_}->{'primary'} > 0 }
+                 keys(%$nodes);
+
+    return deploy_diablo_primary($primary, $POA_POC_PATH);
+}
+
+
 sub deploy_diablo_quorum_ibft
 {
     my ($nodes) = @_;
@@ -302,6 +317,19 @@ sub deploy_diablo_quorum_ibft
 
     return deploy_diablo_primary($primary, $QUORUMIBFT_PATH);
 }
+
+sub deploy_diablo_quorum_ibft_poc
+{
+    my ($nodes) = @_;
+    my ($primary);
+
+    ($primary) = map { $nodes->{$_}->{'worker'} }
+                 grep { $nodes->{$_}->{'primary'} > 0 }
+                 keys(%$nodes);
+
+    return deploy_diablo_primary($primary, $QUORUMIBFT_POC_PATH);
+}
+
 
 sub deploy_diablo_quorum_raft
 {
@@ -476,8 +504,16 @@ sub deploy_diablo
 	return deploy_diablo_poa($nodes);
     }
 
+    if (-f ($POA_POC_PATH . '/setup.yaml')) {
+	return deploy_diablo_poa_poc($nodes);
+    }
+
     if (-f ($QUORUMIBFT_PATH . '/setup.yaml')) {
 	return deploy_diablo_quorum_ibft($nodes);
+    }
+
+    if (-f ($QUORUMIBFT_POC_PATH . '/setup.yaml')) {
+	return deploy_diablo_quorum_ibft_poc($nodes);
     }
 
 	if (-f ($SOLANA_PATH . '/setup.yaml')) {

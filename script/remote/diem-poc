@@ -21,7 +21,7 @@ export RUST_LOG=warn
 command -v 'diem-node' > '/dev/null'
 
 
-ulimit -n 65535
+#ulimit -n 6553500
 
 
 case "$1" in
