@@ -18,10 +18,10 @@ $FLEET->execute(['rm', '-rf', 'deploy'], STDERRS => '/dev/null')->waitall();
 # Do nothing if not enabled.
 #
 
-if ($RUNNER->run($FLEET, [ 'deploy-algorand' ])->wait() != 0) {
-    die ("failed to deploy algorand");
-}
-print("===============");
+#if ($RUNNER->run($FLEET, [ 'deploy-algorand' ])->wait() != 0) {
+#    die ("failed to deploy algorand");
+#}
+
 if ($RUNNER->run($FLEET, [ 'deploy-algorand-poc' ])->wait() != 0) {
     die ("failed to deploy algorand-poc");
 }

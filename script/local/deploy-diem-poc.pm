@@ -14,7 +14,7 @@ my $RUNNER = $PARAMS{RUNNER};
 my $DIEM_PATH = $ENV{MINION_SHARED} . '/diem_poc';
 my $ROLE_PATH = $DIEM_PATH . '/behaviors.txt';
 
-my $DEPLOY_ROOT = 'deploy/diem_poc';       # Where the files are deployed on
+my $POC_DEPLOY_ROOT = 'deploy/poc';       # Where the files are deployed on
 my $MINION_PRIVATE = $ENV{MINION_PRIVATE};  # Where to store local private data
 my $TRANSACTION_CONFIG_NAME = 'transaction_server.config';
 my $MINING_CONFIG_NAME = 'mining_server.config';
@@ -76,13 +76,6 @@ sub get_nodes
 
   close($fh);
 
-  foreach $ip (keys(%nodes)) {
-    $id  = $nodes{$ip}->{'id'};
-	  if( $id > ($nid-1)/2+1) {
-		  $nodes{$ip}->{'type'} = "poc";
-	  }
-  }
-
   return \%nodes;
 }
 
@@ -121,14 +114,6 @@ sub get_normal_nodes
 
   close($fh);
 
-  foreach $ip (keys(%nodes)) {
-    $id  = $nodes{$ip}->{'id'};
-	  if( $id > ($nid-1)/2+1) {
-		  $nodes{$ip}->{'type'} = "poc";
-      print("ip $ip type $nodes{$ip}->{'type'}\n");
-	  }
-  }
-
   return \%nodes;
 }
 
@@ -155,27 +140,21 @@ sub build_config
     foreach $ip (keys(%$nodes)) {
         $type = $nodes->{$ip}->{'type'};
         $port = $nodes->{$ip}->{'port'};
-        if($type eq "chain"){
-          $port = 50000;
-        }
         $id = $nodes->{$ip}->{'id'};
         printf("gen config ip $ip, type $type\n");
-        if($type eq "client"){
-          next;
-        }
-	if($type eq "poc"){
+
 		printf($mfh "\t\treplica_info: {\n");
 		printf($mfh "\t\t\tid: $id,\n");
 		printf($mfh "\t\t\tip: \"$ip\",\n");
 		printf($mfh "\t\t\tport: %d\n",$port);
 		printf($mfh "\t\t},\n");
-	}else {
+
 		printf($ofh "\t\treplica_info: {\n");
 		printf($ofh "\t\t\tid: $id,\n");
 		printf($ofh "\t\t\tip: \"$ip\",\n");
-		printf($ofh "\t\t\tport: %d\n",$port);
+		printf($ofh "\t\t\tport: 50000\n",);
 		printf($ofh "\t\t},\n");
-	}
+
     }
     printf($ofh "\t\tregion_id: 1\n");
     printf($ofh "\t},\n");
@@ -208,12 +187,10 @@ sub dispatch_config
         die ("failed to prepare config, only support 1 ip 1 server.");
       }
 
-      if($type eq "poc") {
-	      $proc = $worker->send([ $server_config, $mining_config ], TARGET => $DEPLOY_ROOT);
+	      $proc = $worker->send([ $server_config, $mining_config ], TARGET => $POC_DEPLOY_ROOT);
 	      if ($proc->wait() != 0) {
           die ("failed to prepare diem-poc workers");
 	      }
-      }
     }
     return 1;
 }
@@ -299,12 +276,10 @@ sub generate_keys
       $port = $nodes->{$ip}->{'port'};
       $id = $nodes->{$ip}->{'id'};
 
-      if($type eq "poc"){
-	      $type = "replica";
-        $proc = $RUNNER->run($worker, [ 'deploy-poc-worker','diem_poc', 'generate', $ip, $port, $type, $id ]);
-        if ($proc->wait() != 0) {
-          die ("failed to generate keys");
-        }
+      $type = "replica";
+      $proc = $RUNNER->run($worker, [ 'deploy-poc-worker','poc', 'generate', $ip, $port, $type, $id ]);
+      if ($proc->wait() != 0) {
+        die ("failed to generate keys");
       }
     }
     return 1;
@@ -325,7 +300,7 @@ sub deploy_poc
     }
 
     @workers = map { $_->{'worker'} } values(%$nodes);
-    $proc = $RUNNER->run(\@workers, [ 'deploy-poc-worker', 'diem_poc', 'prepare' ]);
+    $proc = $RUNNER->run(\@workers, [ 'deploy-poc-worker', 'poc', 'prepare' ]);
     if ($proc->wait() != 0) {
       die ("failed to prepare diem workers");
     }
@@ -365,11 +340,8 @@ sub deploy_diem
       next;
     }
 
-    if($nodes->{$ip}->{'type'} eq "poc"){
-        $poc_client_ip = $ip;
-        $poc_client_port = $nodes->{$ip}->{'port'};
-      next;
-    }
+    $poc_client_ip = $ip;
+    $poc_client_port = $nodes->{$ip}->{'port'};
 
     $assigned = undef;
 

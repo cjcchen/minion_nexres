@@ -484,9 +484,9 @@ sub deploy_diablo
     }
 
 
-    if (-f ($ALGORAND_PATH . '/setup.yaml')) {
-	return deploy_diablo_algorand($nodes);
-    }
+  #  if (-f ($ALGORAND_PATH . '/setup.yaml')) {
+	#return deploy_diablo_algorand($nodes);
+  #  }
 
     if (-f ($ALGORAND_POC_PATH . '/setup.yaml')) {
 	return deploy_diablo_algorand_poc($nodes);
